@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"sync"
@@ -126,26 +127,37 @@ func (s *Scheduler) ReloadConfig() error {
 
 func (s *Scheduler) inWindow() bool {
 	now := time.Now()
-	start, err := time.Parse("15:04", s.cfg.WindowStart)
-	if err != nil {
-		return true
-	}
-	end, err := time.Parse("15:04", s.cfg.WindowEnd)
-	if err != nil {
-		return true
-	}
-	start = time.Date(now.Year(), now.Month(), now.Day(), start.Hour(), start.Minute(), 0, 0, now.Location())
-	end = time.Date(now.Year(), now.Month(), now.Day(), end.Hour(), end.Minute(), 0, 0, now.Location())
+	// Termux/Android may have no tzdata — compensate with TZ offset
+	_, offset := now.Zone()
+	nowLocal := now.Add(time.Duration(offset) * time.Second)
 
-	if start.Equal(end) {
-		return true // 24h window
+	startH, startM := parseHM(s.cfg.WindowStart)
+	endH, endM := parseHM(s.cfg.WindowEnd)
+	if startH < 0 || endH < 0 {
+		return true
 	}
-	if end.Before(start) {
-		// Window crosses midnight (e.g. 23:00–07:00)
-		return !now.Before(start) || now.Before(end)
+
+	nowMinutes := nowLocal.Hour()*60 + nowLocal.Minute()
+	startMinutes := startH*60 + startM
+	endMinutes := endH*60 + endM
+
+	if startMinutes == endMinutes {
+		return true
 	}
-	// Same-day window (e.g. 00:00–07:00)
-	return !now.Before(start) && now.Before(end)
+	if endMinutes < startMinutes {
+		return nowMinutes >= startMinutes || nowMinutes < endMinutes
+	}
+	return nowMinutes >= startMinutes && nowMinutes < endMinutes
+}
+
+func parseHM(s string) (int, int) {
+	parts := strings.SplitN(s, ":", 2)
+	if len(parts) != 2 {
+		return -1, -1
+	}
+	h, _ := strconv.Atoi(parts[0])
+	m, _ := strconv.Atoi(parts[1])
+	return h, m
 }
 
 func (s *Scheduler) loop() {
