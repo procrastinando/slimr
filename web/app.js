@@ -157,6 +157,7 @@ async function pollStatus() {
     setStatus(st.state, st.files_done, st.files_total);
     document.getElementById('status-current').textContent = st.current_file ? ` | ${st.current_file}` : '';
     document.getElementById('status-last-run').textContent = st.last_run || '—';
+    document.getElementById('status-version').textContent = st.version || '—';
     if (currentRunning !== st.running) {
       setToggleButton(st.running);
     }
@@ -217,9 +218,13 @@ async function toggleWorker() {
 function openLogs() {
   const panel = document.getElementById('log-panel');
   panel.classList.remove('hidden');
-  api('GET', '/api/logs?tail=200').then(text => {
-    document.getElementById('log-content').textContent = text || '';
-  }).catch(() => {});
+  fetch('/api/logs?tail=200')
+    .then(r => r.text())
+    .then(text => {
+      document.getElementById('log-content').textContent = text || '';
+      document.getElementById('log-content').scrollTop = document.getElementById('log-content').scrollHeight;
+    })
+    .catch(() => {});
 }
 
 function closeLogs() {

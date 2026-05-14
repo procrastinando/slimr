@@ -16,15 +16,16 @@ import (
 )
 
 type Status struct {
-	Running        bool    `json:"running"`
-	State          string  `json:"state"`
-	CurrentFile    string  `json:"current_file"`
+	Running         bool    `json:"running"`
+	State           string  `json:"state"`
+	CurrentFile     string  `json:"current_file"`
 	CurrentProgress float64 `json:"current_progress"`
 	CurrentDuration float64 `json:"current_duration"`
-	FilesTotal     int     `json:"files_total"`
-	FilesDone      int     `json:"files_done"`
-	LastRun        string  `json:"last_run"`
-	InWindow       bool    `json:"in_window"`
+	FilesTotal      int     `json:"files_total"`
+	FilesDone       int     `json:"files_done"`
+	LastRun         string  `json:"last_run"`
+	InWindow        bool    `json:"in_window"`
+	Version         string  `json:"version"`
 }
 
 type Broadcaster interface {
@@ -43,22 +44,26 @@ type Scheduler struct {
 	stopCh      chan struct{}
 	mu          sync.RWMutex
 	status      Status
+	version     string
 }
 
-func New(cfg *config.Config, configPath string, b Broadcaster) *Scheduler {
+func New(cfg *config.Config, configPath string, b Broadcaster, version string) *Scheduler {
 	return &Scheduler{
 		cfg:         cfg,
 		configPath:  configPath,
 		broadcaster: b,
 		logFile:     filepath.Join(cfg.OutputPath, "conversion.log"),
 		stopCh:      make(chan struct{}),
+		version:     version,
 	}
 }
 
 func (s *Scheduler) Status() Status {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.status
+	st := s.status
+	st.Version = s.version
+	return st
 }
 
 func (s *Scheduler) updateStatus(fn func(*Status)) {
@@ -174,6 +179,7 @@ func (s *Scheduler) loop() {
 		if len(files) == 0 {
 			s.updateStatus(func(st *Status) {
 				st.State = "idle"
+				st.LastRun = time.Now().Format("2006-01-02 15:04:05")
 			})
 			s.log("scan: no new files found")
 			select {
@@ -259,6 +265,35 @@ func (s *Scheduler) processImage(f scanner.File, relDisp string, startTime time.
 
 func (s *Scheduler) processVideo(f scanner.File, relDisp string, startTime time.Time, totalFiles, doneSoFar int) {
 	duration, _ := converter.Duration(f.AbsPath)
+
+	// Check if original bitrate is already below target — skip conversion, just copy
+	targetBitrate, err := converter.ParseBitrate(s.cfg.VideoBitrate)
+	if err == nil && targetBitrate > 0 {
+		origBitrate, err := converter.VideoBitrate(f.AbsPath)
+		if err == nil && origBitrate > 0 {
+			targetBps := targetBitrate * 1000
+			if origBitrate < targetBps {
+				s.log(fmt.Sprintf("%s > %s > SKIP (bitrate %dk < target %dk, copying)",
+					timeNow(), relDisp, origBitrate/1000, targetBitrate))
+				if s.cfg.DeleteOriginal {
+					if err := converter.MoveFile(f.AbsPath, f.OutPath); err != nil {
+						s.log(fmt.Sprintf("MOVE ERROR > %s > %v", relDisp, err))
+						return
+					}
+				} else {
+					if err := converter.CopyFile(f.AbsPath, f.OutPath); err != nil {
+						s.log(fmt.Sprintf("COPY ERROR > %s > %v", relDisp, err))
+						return
+					}
+				}
+				if err := converter.TransferMetadata(f.AbsPath, f.OutPath); err != nil {
+					s.log(fmt.Sprintf("META WARN > %s > %v", relDisp, err))
+				}
+				s.scanner.MarkProcessed(f.RelPath)
+				return
+			}
+		}
+	}
 
 	cmd, stderr, err := converter.ConvertVideo(f.AbsPath, f.OutPath, s.cfg)
 	if err != nil {

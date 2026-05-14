@@ -2,9 +2,12 @@ package converter
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -72,6 +75,48 @@ func Duration(path string) (float64, error) {
 		return 0, err
 	}
 	return strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
+}
+
+func VideoBitrate(path string) (int64, error) {
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-show_entries", "format=bit_rate",
+		"-of", "csv=p=0", path)
+	out, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+	return strconv.ParseInt(strings.TrimSpace(string(out)), 10, 64)
+}
+
+func ParseBitrate(b string) (int64, error) {
+	b = strings.ToLower(strings.TrimSpace(b))
+	b = strings.TrimSuffix(b, "k")
+	b = strings.TrimSuffix(b, "bps")
+	return strconv.ParseInt(b, 10, 64)
+}
+
+func CopyFile(src, dst string) error {
+	dir := filepath.Dir(dst)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	cmd := exec.Command("cp", src, dst)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("cp: %w\n%s", err, stderr.String())
+	}
+	return nil
+}
+
+func MoveFile(src, dst string) error {
+	dir := filepath.Dir(dst)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	if err := os.Rename(src, dst); err != nil {
+		return CopyFile(src, dst)
+	}
+	return nil
 }
 
 func timeNow() string {

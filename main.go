@@ -18,6 +18,8 @@ import (
 //go:embed web
 var webFS embed.FS
 
+const version = "v0.2"
+
 func main() {
 	home, _ := os.UserHomeDir()
 	configPath := filepath.Join(home, ".slimr", "config.json")
@@ -40,7 +42,7 @@ func main() {
 	}
 
 	broadcaster := server.NewLogBroadcaster()
-	sched := scheduler.New(cfg, configPath, broadcaster)
+	sched := scheduler.New(cfg, configPath, broadcaster, version)
 	srv := server.New(cfg, configPath, sched, webFS)
 
 	addr := cfg.BindAddress + ":" + cfg.Port

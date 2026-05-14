@@ -60,6 +60,17 @@ func (c *Config) ExpandPaths() {
 	}
 }
 
+func (c *Config) UnexpandPaths() {
+	home, _ := os.UserHomeDir()
+	homePrefix := home + "/storage/"
+	if strings.HasPrefix(c.InputPath, homePrefix) {
+		c.InputPath = "~/storage/" + c.InputPath[len(homePrefix):]
+	}
+	if strings.HasPrefix(c.OutputPath, homePrefix) {
+		c.OutputPath = "~/storage/" + c.OutputPath[len(homePrefix):]
+	}
+}
+
 func Load(path string) (*Config, error) {
 	cfg := Default()
 	data, err := os.ReadFile(path)

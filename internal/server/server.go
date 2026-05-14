@@ -70,7 +70,10 @@ func (s *Server) setupRoutes() {
 func (s *Server) handleConfigAPI(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		writeJSON(w, s.cfg)
+		// Return copy with display-friendly paths
+		cfgCopy := *s.cfg
+		cfgCopy.UnexpandPaths()
+		writeJSON(w, &cfgCopy)
 	case http.MethodPut:
 		var incoming config.Config
 		if err := json.NewDecoder(r.Body).Decode(&incoming); err != nil {
