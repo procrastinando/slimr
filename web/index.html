@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slimr</title>
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0d1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/logo.png">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Slimr</h1>
+    <div class="header-actions">
+      <button id="btn-toggle" class="btn btn-start">▶ Start</button>
+      <button id="btn-logs" class="btn btn-logs">📋 Logs</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Paths</h2>
+      <div class="form-row">
+        <label>Input:</label>
+        <input type="text" id="input-path" placeholder="~/storage/dcim/Camera">
+      </div>
+      <div class="form-row">
+        <label>Output:</label>
+        <input type="text" id="output-path" placeholder="~/storage/compressed">
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Images</h2>
+      <div class="form-row">
+        <label>Codec:</label>
+        <select id="image-codec">
+          <option value="avif">AVIF</option>
+          <option value="jpg">JPEG</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Quality:</label>
+        <select id="image-quality"></select>
+      </div>
+      <div class="form-row" id="avif-cpu-row">
+        <label>AVIF CPU:</label>
+        <input type="number" id="avif-cpu" min="0" max="8" value="4">
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Videos</h2>
+      <div class="form-row">
+        <label>Codec:</label>
+        <select id="video-codec">
+          <option value="hevc_mediacodec">HEVC (Hardware)</option>
+          <option value="libsvtav1">AV1 (SVT-AV1)</option>
+          <option value="libx265">HEVC (x265)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Video bitrate:</label>
+        <input type="text" id="video-bitrate" placeholder="3500k">
+      </div>
+      <div class="form-row">
+        <label>Audio bitrate:</label>
+        <input type="text" id="audio-bitrate" placeholder="96k">
+      </div>
+      <div class="form-row" id="video-quality-row">
+        <label>Quality/Preset:</label>
+        <select id="video-quality"></select>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Extensions</h2>
+      <div class="form-row">
+        <label>Images:</label>
+        <div id="image-ext-tags" class="tag-list">
+          <span class="tag">.jpg<span class="tag-remove" data-ext=".jpg">×</span></span>
+          <span class="tag">.jpeg<span class="tag-remove" data-ext=".jpeg">×</span></span>
+          <span class="tag">.png<span class="tag-remove" data-ext=".png">×</span></span>
+          <span class="tag">.heic<span class="tag-remove" data-ext=".heic">×</span></span>
+          <span class="tag">.webp<span class="tag-remove" data-ext=".webp">×</span></span>
+        </div>
+        <input type="text" id="image-ext-add" placeholder=".ext" class="ext-add">
+      </div>
+      <div class="form-row">
+        <label>Videos:</label>
+        <div id="video-ext-tags" class="tag-list">
+          <span class="tag">.mp4<span class="tag-remove" data-ext=".mp4">×</span></span>
+          <span class="tag">.mkv<span class="tag-remove" data-ext=".mkv">×</span></span>
+          <span class="tag">.mov<span class="tag-remove" data-ext=".mov">×</span></span>
+          <span class="tag">.avi<span class="tag-remove" data-ext=".avi">×</span></span>
+          <span class="tag">.webm<span class="tag-remove" data-ext=".webm">×</span></span>
+          <span class="tag">.3gp<span class="tag-remove" data-ext=".3gp">×</span></span>
+        </div>
+        <input type="text" id="video-ext-add" placeholder=".ext" class="ext-add">
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Settings</h2>
+      <div class="form-row">
+        <label>Bind address:</label>
+        <input type="text" id="bind-address" placeholder="127.0.0.1">
+      </div>
+      <div class="form-row">
+        <label>Port:</label>
+        <input type="text" id="bind-port" placeholder="8880">
+      </div>
+      <div class="form-row">
+        <label>
+          <input type="checkbox" id="delete-original">
+          Delete original after conversion
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Time window:</label>
+        <input type="time" id="window-start" value="00:00">
+        <span>—</span>
+        <input type="time" id="window-end" value="07:00">
+      </div>
+    </section>
+
+    <div class="actions">
+      <button id="btn-save" class="btn btn-save">Save</button>
+    </div>
+
+    <div id="status-bar">
+      <span id="status-dot" class="dot idle"></span>
+      <span id="status-text">idle</span>
+      <span class="separator">|</span>
+      Files: <span id="status-files">0/0</span>
+      <span id="status-current"></span>
+      <span class="separator">|</span>
+      Last run: <span id="status-last-run">—</span>
+    </div>
+  </main>
+</div>
+
+<div id="log-panel" class="log-panel hidden">
+  <div class="log-header">
+    <h3>Logs</h3>
+    <div>
+      <button id="btn-clear-logs" class="btn-sm">Clear</button>
+      <button id="btn-close-logs" class="btn-sm">✕</button>
+    </div>
+  </div>
+  <pre id="log-content"></pre>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+</script>
+<script src="/app.js"></script>
+</body>
+</html>
