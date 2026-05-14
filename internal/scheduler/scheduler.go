@@ -3,6 +3,7 @@ package scheduler
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -126,10 +127,7 @@ func (s *Scheduler) ReloadConfig() error {
 }
 
 func (s *Scheduler) inWindow() bool {
-	now := time.Now()
-	// Termux/Android may have no tzdata — compensate with TZ offset
-	_, offset := now.Zone()
-	nowLocal := now.Add(time.Duration(offset) * time.Second)
+	h, m := localHourMinute()
 
 	startH, startM := parseHM(s.cfg.WindowStart)
 	endH, endM := parseHM(s.cfg.WindowEnd)
@@ -137,7 +135,7 @@ func (s *Scheduler) inWindow() bool {
 		return true
 	}
 
-	nowMinutes := nowLocal.Hour()*60 + nowLocal.Minute()
+	nowMinutes := h*60 + m
 	startMinutes := startH*60 + startM
 	endMinutes := endH*60 + endM
 
@@ -148,6 +146,33 @@ func (s *Scheduler) inWindow() bool {
 		return nowMinutes >= startMinutes || nowMinutes < endMinutes
 	}
 	return nowMinutes >= startMinutes && nowMinutes < endMinutes
+}
+
+var utcOffsetSeconds int
+var utcOffsetOnce sync.Once
+
+func localHourMinute() (int, int) {
+	utcOffsetOnce.Do(func() {
+		utcOffsetSeconds = detectUTCOffset()
+	})
+	now := time.Now().Add(time.Duration(utcOffsetSeconds) * time.Second)
+	return now.Hour(), now.Minute()
+}
+
+func detectUTCOffset() int {
+	if out, err := exec.Command("date", "+%z").Output(); err == nil {
+		s := strings.TrimSpace(string(out))
+		if len(s) == 5 && (s[0] == '+' || s[0] == '-') {
+			h, _ := strconv.Atoi(s[1:3])
+			m, _ := strconv.Atoi(s[3:5])
+			offset := h*3600 + m*60
+			if s[0] == '-' {
+				offset = -offset
+			}
+			return offset
+		}
+	}
+	return 0
 }
 
 func parseHM(s string) (int, int) {
