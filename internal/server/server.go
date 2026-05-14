@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -130,7 +132,9 @@ func (s *Server) handleLogsAPI(w http.ResponseWriter, r *http.Request) {
 	if tail == "" {
 		tail = "100"
 	}
-	lines := tailLogFile(s.cfg.OutputPath+"/conversion.log", tail)
+	home, _ := os.UserHomeDir()
+	logPath := filepath.Join(home, "slimr-data", "conversion.log")
+	lines := tailLogFile(logPath, tail)
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprint(w, strings.Join(lines, "\n"))
 }

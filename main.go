@@ -18,11 +18,12 @@ import (
 //go:embed web
 var webFS embed.FS
 
-const version = "v0.2"
+const version = "v0.3"
 
 func main() {
 	home, _ := os.UserHomeDir()
-	configPath := filepath.Join(home, ".slimr", "config.json")
+	dataDir := filepath.Join(home, "slimr-data")
+	configPath := filepath.Join(dataDir, "config.json")
 
 	cfg, err := config.Load(configPath)
 	if err != nil {

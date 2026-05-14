@@ -50,11 +50,13 @@ type Scheduler struct {
 }
 
 func New(cfg *config.Config, configPath string, b Broadcaster, version string) *Scheduler {
+	home, _ := os.UserHomeDir()
+	logFile := filepath.Join(home, "slimr-data", "conversion.log")
 	return &Scheduler{
 		cfg:         cfg,
 		configPath:  configPath,
 		broadcaster: b,
-		logFile:     filepath.Join(cfg.OutputPath, "conversion.log"),
+		logFile:     logFile,
 		stopCh:      make(chan struct{}),
 		version:     version,
 	}
