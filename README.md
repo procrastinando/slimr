@@ -68,6 +68,10 @@ Open `http://127.0.0.1:8880` in your phone browser. You'll see the web UI where 
 
 In Chrome, tap the menu → **"Install Slimr"** (or "Add to Home Screen"). This opens full-screen with no browser UI, like a native app.
 
+## Screenshot
+
+![Slimr web UI](screenshot.webp)
+
 ---
 
 ## File locations

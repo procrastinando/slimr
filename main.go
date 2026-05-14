@@ -18,7 +18,7 @@ import (
 //go:embed web
 var webFS embed.FS
 
-const version = "v0.3"
+const version = "v0.3.1"
 
 func main() {
 	home, _ := os.UserHomeDir()
@@ -45,6 +45,11 @@ func main() {
 	broadcaster := server.NewLogBroadcaster()
 	sched := scheduler.New(cfg, configPath, broadcaster, version)
 	srv := server.New(cfg, configPath, sched, webFS)
+
+	if cfg.Running {
+		sched.Start()
+		log.Println("Resumed from previous session")
+	}
 
 	addr := cfg.BindAddress + ":" + cfg.Port
 	fmt.Printf("Slimr running on http://%s\n", addr)

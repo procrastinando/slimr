@@ -103,6 +103,8 @@ func (s *Server) handleStartAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.scheduler.Start()
+	s.cfg.Running = true
+	config.Save(s.configPath, s.cfg)
 	writeJSON(w, map[string]string{"ok": "started"})
 }
 
@@ -112,6 +114,8 @@ func (s *Server) handleStopAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.scheduler.Stop()
+	s.cfg.Running = false
+	config.Save(s.configPath, s.cfg)
 	writeJSON(w, map[string]string{"ok": "stopped"})
 }
 

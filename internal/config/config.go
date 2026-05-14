@@ -12,6 +12,7 @@ type Config struct {
 	OutputPath      string   `json:"output_path"`
 	BindAddress     string   `json:"bind_address"`
 	Port            string   `json:"port"`
+	Running         bool     `json:"running"`
 	ImageCodec      string   `json:"image_codec"`
 	ImageQuality    int      `json:"image_quality"`
 	AvifCPU         int      `json:"avif_cpu"`
