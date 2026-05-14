@@ -30,7 +30,7 @@ type Config struct {
 func Default() *Config {
 	return &Config{
 		InputPath:       "~/storage/dcim/Camera",
-		OutputPath:      "~/storage/compressed",
+		OutputPath:      "~/storage/dcim/slimr",
 		BindAddress:     "127.0.0.1",
 		Port:            "8880",
 		ImageCodec:      "avif",
@@ -42,7 +42,7 @@ func Default() *Config {
 		AudioBitrate:    "96k",
 		VideoQuality:    "",
 		DeleteOriginal:  false,
-		WindowStart:     "00:00",
+		WindowStart:     "23:00",
 		WindowEnd:       "07:00",
 		ImageExtensions: []string{".jpg", ".jpeg", ".png", ".heic", ".webp"},
 		VideoExtensions: []string{".mp4", ".mkv", ".mov", ".avi", ".webm", ".3gp"},

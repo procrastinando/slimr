@@ -66,7 +66,7 @@ function collectConfig() {
 function applyConfig(cfg) {
   config = cfg;
   document.getElementById('input-path').value = cfg.input_path || '~/storage/dcim/Camera';
-  document.getElementById('output-path').value = cfg.output_path || '~/storage/compressed';
+  document.getElementById('output-path').value = cfg.output_path || '~/storage/dcim/slimr';
   document.getElementById('bind-address').value = cfg.bind_address || '127.0.0.1';
   document.getElementById('bind-port').value = cfg.port || '8880';
   document.getElementById('image-codec').value = cfg.image_codec || 'avif';
@@ -75,7 +75,7 @@ function applyConfig(cfg) {
   document.getElementById('video-bitrate').value = cfg.video_bitrate || '3500k';
   document.getElementById('audio-bitrate').value = cfg.audio_bitrate || '96k';
   document.getElementById('delete-original').checked = cfg.delete_original || false;
-  document.getElementById('window-start').value = cfg.window_start || '00:00';
+  document.getElementById('window-start').value = cfg.window_start || '23:00';
   document.getElementById('window-end').value = cfg.window_end || '07:00';
 
   updateQualityDropdown(document.getElementById('image-quality'), cfg.image_codec || 'avif');

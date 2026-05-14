@@ -116,7 +116,8 @@ func (s *Scheduler) ReloadConfig() error {
 		return err
 	}
 	cfg.ExpandPaths()
-	s.cfg = cfg
+	// Copy into existing pointer so server and scheduler share the same config
+	*s.cfg = *cfg
 	s.scanner = scanner.New(s.cfg.InputPath, s.cfg.OutputPath,
 		s.cfg.ImageExtensions, s.cfg.VideoExtensions,
 		s.cfg.ImageCodec, s.cfg.VideoCodec)
@@ -136,10 +137,14 @@ func (s *Scheduler) inWindow() bool {
 	start = time.Date(now.Year(), now.Month(), now.Day(), start.Hour(), start.Minute(), 0, 0, now.Location())
 	end = time.Date(now.Year(), now.Month(), now.Day(), end.Hour(), end.Minute(), 0, 0, now.Location())
 
-	if end.Before(start) || end.Equal(start) {
-		return true
+	if start.Equal(end) {
+		return true // 24h window
 	}
-
+	if end.Before(start) {
+		// Window crosses midnight (e.g. 23:00–07:00)
+		return !now.Before(start) || now.Before(end)
+	}
+	// Same-day window (e.g. 00:00–07:00)
 	return !now.Before(start) && now.Before(end)
 }
 
@@ -231,6 +236,17 @@ func (s *Scheduler) loop() {
 			s.updateStatus(func(st *Status) {
 				st.FilesDone = i + 1
 			})
+
+			// Check window after each file — stop if we left the window
+			if !s.inWindow() {
+				s.updateStatus(func(st *Status) {
+					st.State = "idle"
+					st.InWindow = false
+					st.LastRun = time.Now().Format("2006-01-02 15:04:05")
+				})
+				s.log(fmt.Sprintf("<<<<< out of window, paused (%d/%d) >>>>>", i+1, totalFiles))
+				return
+			}
 		}
 
 		s.updateStatus(func(st *Status) {
