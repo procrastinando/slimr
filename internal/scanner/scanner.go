@@ -28,8 +28,7 @@ type File struct {
 	Ext     string
 }
 
-func New(inputPath, outputPath string, imageExts, videoExts []string, imageCodec, videoCodec string) *Scanner {
-	dbPath := filepath.Join(outputPath, ".processed.db")
+func New(inputPath, outputPath, processedDBPath string, imageExts, videoExts []string, imageCodec, videoCodec string) *Scanner {
 	s := &Scanner{
 		InputPath:       inputPath,
 		OutputPath:      outputPath,
@@ -37,7 +36,7 @@ func New(inputPath, outputPath string, imageExts, videoExts []string, imageCodec
 		VideoExtensions: videoExts,
 		ImageCodec:      imageCodec,
 		VideoCodec:      videoCodec,
-		processedDB:     dbPath,
+		processedDB:     processedDBPath,
 		processed:       make(map[string]bool),
 	}
 	s.loadProcessed()

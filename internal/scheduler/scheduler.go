@@ -83,7 +83,9 @@ func (s *Scheduler) Start() {
 	s.running.Store(true)
 	s.stopCh = make(chan struct{})
 	s.cfg.ExpandPaths()
+	home, _ := os.UserHomeDir()
 	s.scanner = scanner.New(s.cfg.InputPath, s.cfg.OutputPath,
+		filepath.Join(home, "slimr-data", "processed.db"),
 		s.cfg.ImageExtensions, s.cfg.VideoExtensions,
 		s.cfg.ImageCodec, s.cfg.VideoCodec)
 
@@ -120,9 +122,10 @@ func (s *Scheduler) ReloadConfig() error {
 		return err
 	}
 	cfg.ExpandPaths()
-	// Copy into existing pointer so server and scheduler share the same config
 	*s.cfg = *cfg
+	home, _ := os.UserHomeDir()
 	s.scanner = scanner.New(s.cfg.InputPath, s.cfg.OutputPath,
+		filepath.Join(home, "slimr-data", "processed.db"),
 		s.cfg.ImageExtensions, s.cfg.VideoExtensions,
 		s.cfg.ImageCodec, s.cfg.VideoCodec)
 	return nil
@@ -307,11 +310,11 @@ func (s *Scheduler) processImage(f scanner.File, relDisp string, startTime time.
 		s.log(fmt.Sprintf("META WARN > %s > %v", relDisp, err))
 	}
 
+	s.scanner.MarkProcessed(f.RelPath)
+
 	if s.cfg.DeleteOriginal {
 		os.Remove(f.AbsPath)
 	}
-
-	s.scanner.MarkProcessed(f.RelPath)
 	elapsed := time.Since(startTime).Seconds()
 	line := fmt.Sprintf("%s > %s > %.2fs", timeNow(), relDisp, elapsed)
 	s.log(line)
@@ -330,6 +333,7 @@ func (s *Scheduler) processVideo(f scanner.File, relDisp string, startTime time.
 			if origBitrate < targetBps {
 				s.log(fmt.Sprintf("%s > %s > SKIP (bitrate %dk < target %dk, copying)",
 					timeNow(), relDisp, origBitrate/1000, targetBitrate))
+				s.scanner.MarkProcessed(f.RelPath)
 				if s.cfg.DeleteOriginal {
 					if err := converter.MoveFile(f.AbsPath, f.OutPath); err != nil {
 						s.log(fmt.Sprintf("MOVE ERROR > %s > %v", relDisp, err))
@@ -344,7 +348,6 @@ func (s *Scheduler) processVideo(f scanner.File, relDisp string, startTime time.
 				if err := converter.TransferMetadata(f.AbsPath, f.OutPath); err != nil {
 					s.log(fmt.Sprintf("META WARN > %s > %v", relDisp, err))
 				}
-				s.scanner.MarkProcessed(f.RelPath)
 				return
 			}
 		}
@@ -378,11 +381,12 @@ func (s *Scheduler) processVideo(f scanner.File, relDisp string, startTime time.
 		s.log(fmt.Sprintf("META WARN > %s > %v", relDisp, err))
 	}
 
+	s.scanner.MarkProcessed(f.RelPath)
+
 	if s.cfg.DeleteOriginal {
 		os.Remove(f.AbsPath)
 	}
 
-	s.scanner.MarkProcessed(f.RelPath)
 	elapsed := time.Since(startTime).Seconds()
 	line := fmt.Sprintf("%s > %s > %.2fs / %.2fs", timeNow(), relDisp, elapsed, duration)
 	s.log(line)
